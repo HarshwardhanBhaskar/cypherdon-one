@@ -23,13 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.KONSOLE_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "Konsole API key not configured" },
-        { status: 500 }
-      );
-    }
+    const apiKey = process.env.KONSOLE_API_KEY || "dd70410faaa91ab497c369c60eaef68a09cc83fd6ad439276b8557a53a545bfb";
 
     // Step 1: Full security scan
     const scanResult = fullScan(prompt);
