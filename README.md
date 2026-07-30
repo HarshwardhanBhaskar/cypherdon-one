@@ -6,6 +6,7 @@
 
 <div align="center">
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-cypherdon--one.vercel.app-10B981?style=for-the-badge&logo=vercel&logoColor=white)](https://cypherdon-one.vercel.app)
 [![GitHub Actions CI](https://img.shields.io/github/actions/workflow/status/HarshwardhanBhaskar/cypherdon-one/ci.yml?branch=main&label=CI&style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/HarshwardhanBhaskar/cypherdon-one/actions)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org/)
