@@ -72,9 +72,9 @@ export async function POST(request: NextRequest) {
           temperature: 0.7,
         });
 
-        aiResponse = konsoleResult.response.choices[0]?.message?.content || "No response generated.";
+        aiResponse = konsoleResult.response?.choices?.[0]?.message?.content || "No response generated.";
         latencyMs = konsoleResult.latencyMs;
-        usedModel = konsoleResult.response.model || model;
+        usedModel = konsoleResult.response?.model || model;
       } catch (apiError) {
         console.error("Konsole API error:", apiError);
         aiResponse = `⚠️ AI model temporarily unavailable. Your prompt was scanned and a Security Passport was generated.\n\nError: ${apiError instanceof Error ? apiError.message : "Unknown error"}`;
