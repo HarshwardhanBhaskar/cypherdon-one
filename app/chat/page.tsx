@@ -29,15 +29,18 @@ const initialMessages: ChatMessage[] = [
       totalPII: 3,
       totalSecrets: 1,
       totalThreats: 0,
-      pii: [
+      piiFindings: [
         { type: "email", value: "john.doe@acme.com", maskedValue: "jo****@acme.com", position: { start: 0, end: 0 }, severity: "medium", score: 5 },
         { type: "phone", value: "+1 234 567 8910", maskedValue: "+1 234 ***", position: { start: 0, end: 0 }, severity: "low", score: 5 },
         { type: "aadhaar", value: "1234 5678 9012", maskedValue: "XXXX XXXX XXXX", position: { start: 0, end: 0 }, severity: "high", score: 15 }
       ],
-      secrets: [
-        { type: "OpenAI Key", value: "sk-proj-abc123def456ghi789", maskedValue: "sk-proj-****", position: { start: 0, end: 0 }, severity: "critical", score: 20 }
+      secretFindings: [
+        { type: "openai_key", value: "sk-proj-abc123def456ghi789", maskedValue: "sk-proj-****", position: { start: 0, end: 0 }, severity: "critical", score: 20 }
       ],
-      threats: []
+      threatFindings: [],
+      sanitizedPrompt: "Analyze the following data: Email: [REDACTED] Phone: [REDACTED] Aadhaar: [REDACTED] API Key: [REDACTED]",
+      originalPrompt: "Analyze the following data and give me insights: Email: john.doe@acme.com Phone: +1 234 567 8910 Aadhaar: 1234 5678 9012 API Key: sk-proj-abc123def456ghi789",
+      scanDurationMs: 12
     },
     passport: {
       id: "CYPH-SEC-9842-X7",
@@ -54,7 +57,7 @@ const initialMessages: ChatMessage[] = [
         { type: "aadhaar", value: "1234 5678 9012", maskedValue: "XXXX XXXX XXXX", position: { start: 0, end: 0 }, severity: "high", score: 15 }
       ],
       secretsFound: [
-        { type: "OpenAI Key", value: "sk-proj-abc123def456ghi789", maskedValue: "sk-proj-****", position: { start: 0, end: 0 }, severity: "critical", score: 20 }
+        { type: "openai_key", value: "sk-proj-abc123def456ghi789", maskedValue: "sk-proj-****", position: { start: 0, end: 0 }, severity: "critical", score: 20 }
       ],
       threatsFound: [],
       policyStatus: "warning",
