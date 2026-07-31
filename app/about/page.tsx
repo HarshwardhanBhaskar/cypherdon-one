@@ -20,7 +20,7 @@ export default function AboutCompanyPage() {
 
             <h1 className="about-title">Architecting Next-Generation Enterprise AI Governance</h1>
             <p className="about-lead">
-              Cypherdon One is built by <strong>HB Technologies</strong> (Lead Architect & Founder: Harsh Wardhan Bhaskar).
+              Cypherdon One is built by <strong>HB Technologies</strong> (Lead Architect & Founder: Harshwardhan Bhaskar).
               We empower global enterprises to adopt Large Language Models safely without risking data leaks, PII exposure, or compliance penalties.
             </p>
           </div>

@@ -68,7 +68,7 @@ export default function EnterpriseSidebar() {
           <UserCheck size={18} />
         </div>
         <div className="user-details">
-          <div className="user-name">Harsh Wardhan Bhaskar</div>
+          <div className="user-name">Harshwardhan Bhaskar</div>
           <div className="user-role">Architect & Security Admin</div>
           <div className="user-credit">Crafted by HB Technologies</div>
         </div>
