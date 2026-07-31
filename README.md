@@ -38,53 +38,78 @@ As global enterprises rapidly integrate Large Language Models (LLMs) into daily 
 
 **Cypherdon One** is an enterprise-grade AI governance platform and zero-trust proxy built on top of the **Konsole AI Security Harness**. It sits between employees and AI models, automatically scanning, redacting, and auditing every interaction in real time.
 
-```
-┌─────────────────┐       ┌─────────────────────────────────────────────────────────────┐       ┌───────────────────────┐
-│ Enterprise User │ ────► │                     Cypherdon One Engine                    │ ────► │  Konsole API Harness  │
-│ (Prompt Input)  │       │ [ PII Masking | Secret Interception | Threat Defense ]      │       │ (api.konsole.one/v1)  │
-└─────────────────┘       └──────────────────────────────┬──────────────────────────────┘       └───────────┬───────────┘
-                                                         │                                                  │
-                                                         ▼                                                  ▼
-                                          ┌──────────────────────────────┐                       ┌──────────────────────┐
-                                          │  Auditable Security Passport │ ◄──────────────────── │   Target AI Model    │
-                                          │   Digital Audit Certificate  │                       │ (Gemini/DeepSeek)    │
-                                          └──────────────────────────────┘                       └──────────────────────┘
-```
+<p align="center">
+  <img src="./docs/images/architecture_system_overview.png" alt="Cypherdon One System Architecture Overview" width="100%" />
+</p>
 
 ---
 
-## 🏛️ System Architecture
+## 🏛️ System Architecture & Workflow
 
-Cypherdon One features a decoupled, multi-layer micro-service architecture optimized for ultra-low latency (<200ms overhead):
+```mermaid
+flowchart TD
+    subgraph Client ["Client & Presentation Layer"]
+        A[User Input / Prompt] -->|HTTPS POST /api/chat| B[Cypherdon Gateway Router]
+    end
 
+    subgraph Security ["Security & Governance Engine"]
+        B --> C{Security Scanner}
+        C -->|Stage 1| D[PII Detector: Aadhaar, PAN, SSN, Emails]
+        C -->|Stage 2| E[Secret Interceptor: OpenAI, AWS, GitHub Keys]
+        C -->|Stage 3| F[Threat Engine: DAN 11.0 & Prompt Injections]
+        D --> G[Sanitized & Redacted Payload]
+        E --> G
+        F -->|Block Threat| H[Blocked Response Gateway]
+    end
+
+    subgraph Konsole ["Konsole AI Security Harness"]
+        G -->|api.konsole.one/v1| I[Konsole API Gateway]
+        I -->|security_profile: strict| J[Target LLM: Gemini / DeepSeek]
+        J -->|Completion Output| K[Response Payload]
+    end
+
+    subgraph Audit ["Audit & Compliance Engine"]
+        K --> L[AI Security Passport Generator]
+        L --> M[Auditable Digital Certificate & SHA Hash]
+    end
+
+    style Client fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style Security fill:#1e1b4b,stroke:#6366f1,stroke-width:2px,color:#fff
+    style Konsole fill:#022c22,stroke:#10b981,stroke-width:2px,color:#fff
+    style Audit fill:#311b92,stroke:#8b5cf6,stroke-width:2px,color:#fff
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 PRESENTATION LAYER                                      │
-│  Next.js 16 App Router (React 19) + Tailwind CSS 4.0 + Recharts Telemetry Engine         │
-│  ├── /chat                 → ChatGPT Enterprise Clean UI (Spacious 2-column workspace) │
-│  ├── /dashboard            → Executive Analytics & Real Kaggle Benchmark Test Runner   │
-│  ├── /risk-intelligence    → Global Threat Surface & Live Audit Stream                 │
-│  ├── /analytics            → Deep Telemetry & Response Latency Analytics              │
-│  └── /governance           → Custom Enterprise AI Policy Rule Engine                  │
-└────────────────────────────────────────────────────────┬────────────────────────────────┘
-                                                         │
-                                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 SECURITY GOVERNANCE LAYER                               │
-│  ├── scanner.ts            → Multi-pattern regex scanner (PII & Credential Redaction)   │
-│  ├── prompt-analyzer.ts    → Threat Engine (DAN 11.0, Injection & System Extraction)    │
-│  ├── risk-engine.ts        → Dynamic Risk Assessment & Trust Score Calculation          │
-│  └── benchmark.ts         → Real Kaggle/HuggingFace AI Safety Benchmark Runner (40)    │
-└────────────────────────────────────────────────────────┬────────────────────────────────┘
-                                                         │
-                                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                              KONSOLE INTEGRATION GATEWAY                                │
-│  lib/konsole.ts → Server-side REST client (api.konsole.one/v1/chat/completions)         │
-│  ├── security_profile: "strict"                                                         │
-│  ├── pii_detection: true & pii_masking: true                                            │
-│  └── av_detection: true & av_blocking: true                                             │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+### ⚡ Layered Architecture Breakdown
+
+<p align="center">
+  <img src="./docs/images/architecture_security_pipeline.png" alt="Cypherdon One Security Pipeline Architecture" width="100%" />
+</p>
+
+```mermaid
+graph LR
+    subgraph Presentation ["Presentation Layer"]
+        UI1["/chat — ChatGPT Enterprise Clean UI"]
+        UI2["/dashboard — Executive Analytics"]
+        UI3["/risk-intelligence — Live Threat Surface"]
+        UI4["/analytics — Telemetry & Response Latency"]
+    end
+
+    subgraph CoreEngine ["Core Governance Engine"]
+        E1["lib/scanner.ts (Regex Engine)"]
+        E2["lib/prompt-analyzer.ts (Attack Shield)"]
+        E3["lib/risk-engine.ts (Trust Scoring)"]
+        E4["lib/benchmark.ts (40 Kaggle Prompts)"]
+    end
+
+    subgraph Gateway ["Konsole Harness Integration"]
+        G1["lib/konsole.ts (REST API Client)"]
+        G2["security_profile: 'strict'"]
+        G3["pii_detection & pii_masking: true"]
+        G4["av_detection & av_blocking: true"]
+    end
+
+    Presentation --> CoreEngine
+    CoreEngine --> Gateway
 ```
 
 ---
