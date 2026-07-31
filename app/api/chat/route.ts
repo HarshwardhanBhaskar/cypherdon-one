@@ -42,6 +42,13 @@ export async function POST(request: NextRequest) {
     let latencyMs = 0;
     let usedModel = model;
 
+    // Map "Auto" to a concrete model — Konsole API doesn't support "Auto" directly
+    if (usedModel === "Auto") {
+      const { recommendModel } = await import("@/lib/risk-engine");
+      const recommended = recommendModel(riskAssessment.level, prompt.length);
+      usedModel = recommended.model;
+    }
+
     if (shouldBlock) {
       // Don't send to AI — generate a block response
       aiResponse = generateBlockResponse(scanResult, riskAssessment);

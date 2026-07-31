@@ -82,16 +82,30 @@ const initialMessages: ChatMessage[] = [
 export default function ChatGPTEnterpriseChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputText, setInputText] = useState("");
-  const [selectedModel, setSelectedModel] = useState("Auto");
+  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
   const [isLoading, setIsLoading] = useState(false);
   const [expandedPassport, setExpandedPassport] = useState<string | null>("msg-2");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  // Scroll only the chat container, not the whole page
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
   }, [messages, isLoading]);
+
+  // Lock body scroll when chat page is mounted
+  useEffect(() => {
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, []);
 
   const sendPrompt = async (textToSend: string) => {
     const trimmed = textToSend.trim();
@@ -118,8 +132,11 @@ export default function ChatGPTEnterpriseChatPage() {
       if (res.ok) {
         const data = await res.json();
         setMessages((prev) => [...prev, data.message]);
-        if (data.message.passport) {
+        // Only auto-expand passport for risky prompts (not clean ones)
+        if (data.message.passport && data.message.passport.promptRisk.level !== "low") {
           setExpandedPassport(data.message.id);
+        } else {
+          setExpandedPassport(null);
         }
       } else {
         generateFallbackResponse(trimmed);
@@ -170,7 +187,12 @@ export default function ChatGPTEnterpriseChatPage() {
     };
 
     setMessages((prev) => [...prev, assistantMsg]);
-    setExpandedPassport(assistantMsg.id);
+    // Only auto-expand passport for risky prompts
+    if (risk.level !== "low") {
+      setExpandedPassport(assistantMsg.id);
+    } else {
+      setExpandedPassport(null);
+    }
   };
 
   const handleCopy = (text: string, id: string) => {
@@ -186,7 +208,7 @@ export default function ChatGPTEnterpriseChatPage() {
       <EnterpriseSidebar />
 
       <div className="gpt-workspace-body">
-        {/* Top Floating Model Header */}
+        {/* Top Floating Model & Harness Header */}
         <header className="gpt-top-header">
           <div className="model-selector-pill">
             <Bot size={16} className="text-indigo-400" />
@@ -198,7 +220,7 @@ export default function ChatGPTEnterpriseChatPage() {
               <option value="gemini-2.5-flash">Gemini 2.5 Flash (Google)</option>
               <option value="deepseek-v4-flash">DeepSeek V4 Flash (DeepSeek)</option>
               <option value="qwen3-max">Qwen 3 Max (Alibaba)</option>
-              <option value="Auto">Auto Smart Router (Konsole)</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro (Google)</option>
             </select>
           </div>
 
@@ -208,9 +230,9 @@ export default function ChatGPTEnterpriseChatPage() {
           </div>
         </header>
 
-        {/* Centered Conversation Stream (ChatGPT Enterprise Style) */}
+        {/* Spacious Centered Conversation Stream (ChatGPT / Claude Style) */}
         <main className="gpt-chat-container">
-          <div className="gpt-stream-wrapper">
+          <div className="gpt-stream-wrapper" ref={scrollContainerRef}>
             {messages.map((msg) => (
               <div key={msg.id} className={`gpt-message-row ${msg.role}`}>
                 <div className="msg-avatar">
@@ -220,35 +242,89 @@ export default function ChatGPTEnterpriseChatPage() {
                 <div className="msg-content-block">
                   <div className="msg-header">
                     <span className="author">{msg.role === "user" ? "You" : "Cypherdon AI"}</span>
-                    <button className="btn-copy" onClick={() => handleCopy(msg.content, msg.id)}>
+                    <button className="btn-copy" title="Copy text" onClick={() => handleCopy(msg.content, msg.id)}>
                       {copiedId === msg.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                     </button>
                   </div>
 
+                  {/* Message Content */}
                   <div className="msg-text">
                     {msg.content.split("\n").map((line, i) => (
                       <p key={i}>{line || "\u00A0"}</p>
                     ))}
                   </div>
 
-                  {/* Inline Security Passport Certificate Badge */}
-                  {msg.role === "assistant" && msg.passport && (
-                    <div className="passport-inline-card">
-                      <button
-                        className="passport-bar-toggle"
-                        onClick={() => setExpandedPassport(expandedPassport === msg.id ? null : msg.id)}
-                      >
-                        <Shield size={14} className="text-indigo-400" />
-                        <span>Security Passport: <strong>{msg.passport.id}</strong></span>
-                        <span className="risk-pill-tag">
-                          {msg.passport.promptRisk.level.toUpperCase()} ({msg.passport.promptRisk.overallScore}/100)
-                        </span>
-                        {expandedPassport === msg.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </button>
+                  {/* Security Detections & Analysis Results Section */}
+                  {msg.role === "assistant" && (msg.scanResult || msg.passport) && (
+                    <div className="security-results-section">
+                      <div className="section-header">
+                        <div className="flex items-center gap-2">
+                          <Shield size={14} className="text-indigo-400" />
+                          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                            Security Inspection & Governance Results
+                          </span>
+                        </div>
+                        {msg.passport && (
+                          <span className={`risk-pill-tag risk-${msg.passport.promptRisk.level}`}>
+                            {msg.passport.promptRisk.level.toUpperCase()} ({msg.passport.promptRisk.overallScore}/100)
+                          </span>
+                        )}
+                      </div>
 
-                      {expandedPassport === msg.id && (
-                        <div className="passport-detail-drawer">
-                          <SecurityPassportCard passport={msg.passport} />
+                      {/* Structured Findings Table */}
+                      {msg.scanResult && (msg.scanResult.totalPII > 0 || msg.scanResult.totalSecrets > 0) && (
+                        <div className="findings-table-wrapper">
+                          <table className="findings-table">
+                            <thead>
+                              <tr>
+                                <th>Item</th>
+                                <th>Detection Type</th>
+                                <th>Masked Value</th>
+                                <th>Severity</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {msg.scanResult.piiFindings.map((pii, idx) => (
+                                <tr key={`pii-${idx}`}>
+                                  <td className="font-semibold text-slate-200">{pii.type.replace(/_/g, " ").toUpperCase()}</td>
+                                  <td><span className="tag-pii">PII Detected</span></td>
+                                  <td className="font-mono text-indigo-300">{pii.maskedValue}</td>
+                                  <td><span className={`severity-badge ${pii.severity}`}>{pii.severity}</span></td>
+                                </tr>
+                              ))}
+                              {msg.scanResult.secretFindings.map((secret, idx) => (
+                                <tr key={`sec-${idx}`}>
+                                  <td className="font-semibold text-slate-200">{secret.type.replace(/_/g, " ").toUpperCase()}</td>
+                                  <td><span className="tag-secret">Secret Credentials</span></td>
+                                  <td className="font-mono text-red-300">{secret.maskedValue}</td>
+                                  <td><span className="severity-badge critical">Critical</span></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Toggleable Full Security Passport Card */}
+                      {msg.passport && (
+                        <div className="passport-inline-card">
+                          <button
+                            className="passport-bar-toggle"
+                            onClick={() => setExpandedPassport(expandedPassport === msg.id ? null : msg.id)}
+                          >
+                            <FileText size={14} className="text-indigo-400" />
+                            <span>Security Passport: <strong>{msg.passport.id}</strong></span>
+                            <span className="ml-auto text-xs text-indigo-300 flex items-center gap-1">
+                              {expandedPassport === msg.id ? "Hide Audit Certificate" : "View Full Certificate"}
+                              {expandedPassport === msg.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            </span>
+                          </button>
+
+                          {expandedPassport === msg.id && (
+                            <div className="passport-detail-drawer">
+                              <SecurityPassportCard passport={msg.passport} />
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -315,50 +391,6 @@ export default function ChatGPTEnterpriseChatPage() {
             </div>
           </div>
         </main>
-
-        {/* Right Telemetry Sidebar */}
-        <aside className="telemetry-right-sidebar">
-          <div className="sidebar-section-title">
-            <Shield size={14} className="text-indigo-400" />
-            <span>Real-Time Telemetry</span>
-          </div>
-
-          {latestPassport ? (
-            <div className="telemetry-body">
-              <div className="widget-box">
-                <span className="widget-label">LIVE TRUST SCORE</span>
-                <TrustScoreDisplay score={latestPassport.trustScore} size="md" />
-              </div>
-
-              <div className="widget-box">
-                <span className="widget-label">PASSPORT FINDINGS</span>
-                <div className="finding-tag warning">
-                  <Eye size={12} />
-                  <span>PII Detected: {latestPassport.piiFound.length}</span>
-                </div>
-                <div className="finding-tag danger">
-                  <Lock size={12} />
-                  <span>Secrets Found: {latestPassport.secretsFound.length}</span>
-                </div>
-                <div className="finding-tag success">
-                  <Shield size={12} />
-                  <span>Injection Shield: Active</span>
-                </div>
-              </div>
-
-              <div className="widget-box">
-                <span className="widget-label">POLICY ENGINE</span>
-                <div className="policy-title">Data Protection Policy</div>
-                <div className="policy-sub">Status: Compliant & Masked</div>
-              </div>
-            </div>
-          ) : (
-            <div className="empty-telemetry">
-              <Shield size={24} className="text-slate-500 mb-2" />
-              <span>Send a message to view live telemetry.</span>
-            </div>
-          )}
-        </aside>
       </div>
 
       <style jsx>{`
@@ -374,6 +406,7 @@ export default function ChatGPTEnterpriseChatPage() {
           margin-left: 220px;
           flex: 1;
           display: flex;
+          flex-direction: column;
           height: 100vh;
           position: relative;
           background: #090D16;
@@ -381,23 +414,20 @@ export default function ChatGPTEnterpriseChatPage() {
 
         /* Top Header */
         .gpt-top-header {
-          position: absolute;
-          top: 12px;
-          left: 20px;
-          right: 280px;
-          z-index: 20;
+          height: 54px;
+          padding: 0 24px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          pointer-events: none;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(15, 23, 42, 0.8);
+          backdrop-filter: blur(12px);
         }
         .model-selector-pill {
-          pointer-events: auto;
           display: flex;
           align-items: center;
           gap: 8px;
-          background: rgba(15, 23, 42, 0.85);
-          backdrop-filter: blur(12px);
+          background: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 20px;
           padding: 4px 12px;
@@ -431,13 +461,13 @@ export default function ChatGPTEnterpriseChatPage() {
           box-shadow: 0 0 6px #22C55E;
         }
 
-        /* Center Chat Stream */
+        /* Center Chat Stream (ChatGPT / Claude Wide Layout) */
         .gpt-chat-container {
           flex: 1;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 60px 40px 20px;
+          padding: 20px 40px;
           overflow: hidden;
         }
 
@@ -446,8 +476,8 @@ export default function ChatGPTEnterpriseChatPage() {
           overflow-y: auto;
           display: flex;
           flex-direction: column;
-          gap: 24px;
-          max-width: 800px;
+          gap: 28px;
+          max-width: 860px;
           margin: 0 auto;
           width: 100%;
           padding-right: 8px;
@@ -455,11 +485,11 @@ export default function ChatGPTEnterpriseChatPage() {
 
         .gpt-message-row {
           display: flex;
-          gap: 14px;
+          gap: 16px;
         }
         .msg-avatar {
-          width: 32px;
-          height: 32px;
+          width: 34px;
+          height: 34px;
           border-radius: 50%;
           background: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.1);
@@ -492,14 +522,91 @@ export default function ChatGPTEnterpriseChatPage() {
         .msg-text {
           font-size: 14px;
           color: #E2E8F0;
-          line-height: 1.6;
+          line-height: 1.65;
         }
         .msg-text p {
           margin: 4px 0;
         }
 
+        /* Security Results Card Section */
+        .security-results-section {
+          margin-top: 14px;
+          background: rgba(15, 23, 42, 0.6);
+          border: 1px solid rgba(99, 102, 241, 0.25);
+          border-radius: 12px;
+          padding: 14px 16px;
+        }
+        .section-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-bottom: 10px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          margin-bottom: 12px;
+        }
+        .risk-pill-tag {
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 4px;
+        }
+        .risk-pill-tag.risk-low { background: rgba(34, 197, 94, 0.2); color: #4ADE80; }
+        .risk-pill-tag.risk-medium { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
+        .risk-pill-tag.risk-high { background: rgba(249, 115, 22, 0.2); color: #FB923C; }
+        .risk-pill-tag.risk-critical { background: rgba(239, 68, 68, 0.2); color: #FCA5A5; }
+
+        .findings-table-wrapper {
+          overflow-x: auto;
+          margin-bottom: 12px;
+        }
+        .findings-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 12px;
+        }
+        .findings-table th {
+          text-align: left;
+          padding: 6px 10px;
+          color: #94A3B8;
+          font-weight: 600;
+          font-size: 10px;
+          text-transform: uppercase;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .findings-table td {
+          padding: 8px 10px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .tag-pii {
+          background: rgba(245, 158, 11, 0.15);
+          color: #FBBF24;
+          font-size: 10px;
+          font-weight: 600;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+        .tag-secret {
+          background: rgba(239, 68, 68, 0.15);
+          color: #FCA5A5;
+          font-size: 10px;
+          font-weight: 600;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+        .severity-badge {
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+        .severity-badge.low { background: rgba(34, 197, 94, 0.15); color: #4ADE80; }
+        .severity-badge.medium { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
+        .severity-badge.high { background: rgba(249, 115, 22, 0.15); color: #FB923C; }
+        .severity-badge.critical { background: rgba(239, 68, 68, 0.15); color: #FCA5A5; }
+
         .passport-inline-card {
-          margin-top: 12px;
+          margin-top: 8px;
         }
         .passport-bar-toggle {
           width: 100%;
@@ -513,15 +620,6 @@ export default function ChatGPTEnterpriseChatPage() {
           font-size: 12px;
           color: #C7D2FE;
           cursor: pointer;
-        }
-        .risk-pill-tag {
-          margin-left: auto;
-          background: rgba(34, 197, 94, 0.2);
-          color: #4ADE80;
-          font-size: 10px;
-          font-weight: 700;
-          padding: 2px 6px;
-          border-radius: 4px;
         }
         .passport-detail-drawer {
           margin-top: 8px;
@@ -537,7 +635,7 @@ export default function ChatGPTEnterpriseChatPage() {
 
         /* Bottom Floating Prompt Pill */
         .gpt-input-box-wrapper {
-          max-width: 800px;
+          max-width: 860px;
           margin: 16px auto 0;
           width: 100%;
         }
@@ -608,69 +706,6 @@ export default function ChatGPTEnterpriseChatPage() {
           font-size: 10px;
           color: #64748B;
           margin-top: 8px;
-        }
-
-        /* Right Telemetry Sidebar */
-        .telemetry-right-sidebar {
-          width: 260px;
-          background: #0F172A;
-          border-left: 1px solid rgba(255, 255, 255, 0.08);
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .sidebar-section-title {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          font-weight: 700;
-          color: #FFFFFF;
-          padding-bottom: 10px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .telemetry-body {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .widget-box {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          border-radius: 8px;
-          padding: 12px;
-        }
-        .widget-label {
-          font-size: 10px;
-          font-weight: 700;
-          color: #64748B;
-          letter-spacing: 0.8px;
-          display: block;
-          margin-bottom: 8px;
-        }
-        .finding-tag {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 11px;
-          font-weight: 600;
-          padding: 4px 8px;
-          border-radius: 4px;
-          margin-bottom: 4px;
-        }
-        .finding-tag.warning { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
-        .finding-tag.danger { background: rgba(239, 68, 68, 0.15); color: #FCA5A5; }
-        .finding-tag.success { background: rgba(34, 197, 94, 0.15); color: #4ADE80; }
-
-        .policy-title { font-size: 12px; font-weight: 700; color: #FFFFFF; }
-        .policy-sub { font-size: 11px; color: #4ADE80; margin-top: 2px; }
-
-        .empty-telemetry {
-          text-align: center;
-          font-size: 11px;
-          color: #64748B;
-          margin-top: 40px;
         }
 
         .spin { animation: spin 1s linear infinite; }
