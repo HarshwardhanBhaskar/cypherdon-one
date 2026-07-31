@@ -29,9 +29,10 @@ const navigationItems = [
 
 export default function EnterpriseSidebar() {
   const pathname = usePathname();
+  const isDarkTheme = pathname === "/chat";
 
   return (
-    <aside className="enterprise-sidebar">
+    <aside className={`enterprise-sidebar ${isDarkTheme ? "dark-theme" : ""}`}>
       {/* Brand Header */}
       <div className="sidebar-brand">
         <div className="brand-logo-bg">
@@ -85,7 +86,42 @@ export default function EnterpriseSidebar() {
           left: 0;
           z-index: 50;
           font-family: var(--font-sans);
+          transition: background 0.2s, border-color 0.2s;
         }
+
+        /* Dark Theme Variation (for AI Chat Workspace) */
+        .enterprise-sidebar.dark-theme {
+          background: #0B0F19;
+          border-right: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .enterprise-sidebar.dark-theme .sidebar-brand {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .enterprise-sidebar.dark-theme .brand-name {
+          color: #FFFFFF;
+        }
+        .enterprise-sidebar.dark-theme .nav-item {
+          color: #94A3B8;
+        }
+        .enterprise-sidebar.dark-theme .nav-item:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: #FFFFFF;
+        }
+        .enterprise-sidebar.dark-theme .nav-item.active {
+          background: rgba(79, 70, 229, 0.25);
+          color: #818CF8;
+        }
+        .enterprise-sidebar.dark-theme .sidebar-footer {
+          background: #070A12;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .enterprise-sidebar.dark-theme .user-name {
+          color: #FFFFFF;
+        }
+        .enterprise-sidebar.dark-theme .user-role {
+          color: #94A3B8;
+        }
+
         .sidebar-brand {
           height: 60px;
           padding: 0 16px;

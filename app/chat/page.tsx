@@ -84,7 +84,7 @@ export default function ChatGPTEnterpriseChatPage() {
   const [inputText, setInputText] = useState("");
   const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
   const [isLoading, setIsLoading] = useState(false);
-  const [expandedPassport, setExpandedPassport] = useState<string | null>("msg-2");
+  const [expandedPassport, setExpandedPassport] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
