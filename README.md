@@ -198,7 +198,7 @@ npm install
 ### 2. Environment Configuration
 Create a `.env.local` file in the root directory:
 ```env
-KONSOLE_API_KEY=dd70410faaa91ab497c369c60eaef68a09cc83fd6ad439276b8557a53a545bfb
+KONSOLE_API_KEY=your_konsole_api_key_here
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
