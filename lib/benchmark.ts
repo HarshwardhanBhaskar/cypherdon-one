@@ -6,7 +6,6 @@
 import { KAGGLE_AI_SAFETY_BENCHMARK, BenchmarkPrompt } from "./dataset";
 import { fullScan } from "./scanner";
 import { calculateRisk, calculateTrustScore, estimateCost } from "./risk-engine";
-import { store } from "./store";
 import { SecurityPassport, AuditEntry } from "./types";
 
 export interface BenchmarkSummary {
@@ -22,8 +21,9 @@ export interface BenchmarkSummary {
   scanDurationMs: number;
 }
 
-export function runRealKaggleBenchmark(): BenchmarkSummary {
+export function runRealKaggleBenchmark(targetStore?: any): BenchmarkSummary {
   const startTime = performance.now();
+  const activeStore = targetStore || require("./store").store;
 
   let blockedCount = 0;
   let piiMaskedCount = 0;
@@ -89,7 +89,7 @@ export function runRealKaggleBenchmark(): BenchmarkSummary {
     };
 
     // Store in Store
-    store.addPassport(passport);
+    activeStore.addPassport(passport);
 
     // Create Audit Entry
     const auditEntry: AuditEntry = {
@@ -104,7 +104,7 @@ export function runRealKaggleBenchmark(): BenchmarkSummary {
       details: `${item.source} | ${item.description}`,
     };
 
-    store.addAuditEntry(auditEntry);
+    activeStore.addAuditEntry(auditEntry);
   });
 
   const total = KAGGLE_AI_SAFETY_BENCHMARK.length;

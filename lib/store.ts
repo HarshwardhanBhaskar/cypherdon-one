@@ -86,7 +86,7 @@ class CypherdonStore {
 
     // Seed store with real Kaggle AI Safety benchmark audit entries & passports
     const { runRealKaggleBenchmark } = require("./benchmark");
-    runRealKaggleBenchmark();
+    runRealKaggleBenchmark(this);
   }
 
   // --- Passport Methods ---
