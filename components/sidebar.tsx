@@ -62,14 +62,15 @@ export default function EnterpriseSidebar() {
         })}
       </nav>
 
-      {/* User Profile Footer */}
+      {/* User Profile Footer & Credits */}
       <div className="sidebar-footer">
         <div className="user-avatar">
           <UserCheck size={18} />
         </div>
         <div className="user-details">
-          <div className="user-name">Harshwardhan B.</div>
-          <div className="user-role">Security Admin</div>
+          <div className="user-name">Harsh Wardhan Bhaskar</div>
+          <div className="user-role">Architect & Security Admin</div>
+          <div className="user-credit">Crafted by HB Technologies</div>
         </div>
       </div>
 
@@ -215,6 +216,12 @@ export default function EnterpriseSidebar() {
         .user-role {
           font-size: 10px;
           color: #64748B;
+        }
+        .user-credit {
+          font-size: 9px;
+          color: #818CF8;
+          font-weight: 600;
+          margin-top: 1px;
         }
       `}</style>
     </aside>

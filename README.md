@@ -20,7 +20,7 @@
 
 > **🏆 Hackathon Submission**: Official entry for the **Konsole by ClearTrust Hackathon** — *"Build the Future of AI Terminal Workflows"*.  
 > **Production App**: [cypherdon-one.vercel.app](https://cypherdon-one.vercel.app)  
-> **Author**: Harsh Wardhan Bhaskar (HB Technologies)
+> **Crafted By**: Architected and Crafted by **Harsh Wardhan Bhaskar** | Crafted by **HB Technologies**
 
 ---
 
@@ -200,4 +200,4 @@ docker-compose up --build
 
 This project is open-source under the [MIT License](./LICENSE).
 
-Developed with ❤️ by **Harsh Wardhan Bhaskar** ([HB Technologies](https://github.com/HarshwardhanBhaskar)) for the **Konsole Hackathon 2026**.
+Architected and Crafted by **Harsh Wardhan Bhaskar** | Crafted by **HB Technologies** for the **Konsole Hackathon 2026**.
