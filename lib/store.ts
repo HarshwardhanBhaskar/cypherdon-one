@@ -84,8 +84,9 @@ class CypherdonStore {
       },
     ];
 
-    // Seed demo audit entries
-    this.auditLog = generateDemoAuditEntries();
+    // Seed store with real Kaggle AI Safety benchmark audit entries & passports
+    const { runRealKaggleBenchmark } = require("./benchmark");
+    runRealKaggleBenchmark();
   }
 
   // --- Passport Methods ---
@@ -155,17 +156,23 @@ class CypherdonStore {
     const passports = this.passports;
     const audits = this.auditLog;
 
+    const blockedCount = audits.filter((a) => a.status === "blocked").length;
+    const piiCount = passports.reduce((sum, p) => sum + p.piiFound.length, 0);
+    const secretCount = passports.reduce((sum, p) => sum + p.secretsFound.length, 0);
+    const totalCost = Math.round(passports.reduce((sum, p) => sum + p.cost, 0) * 100) / 100;
+    const avgRisk = passports.length > 0
+      ? Math.round(passports.reduce((sum, p) => sum + p.promptRisk.overallScore, 0) / passports.length)
+      : 18;
+
     return {
-      totalRequests: audits.length + passports.length,
-      blockedRequests: audits.filter((a) => a.status === "blocked").length + 12,
-      piiDetected: passports.reduce((sum, p) => sum + p.piiFound.length, 0) + 47,
-      secretsBlocked: passports.reduce((sum, p) => sum + p.secretsFound.length, 0) + 23,
-      moneySaved: 1284.50,
-      averageRisk: passports.length > 0
-        ? Math.round(passports.reduce((sum, p) => sum + p.promptRisk.overallScore, 0) / passports.length)
-        : 18,
-      averageCost: 0.003,
-      totalCost: passports.reduce((sum, p) => sum + p.cost, 0) + 42.80,
+      totalRequests: audits.length,
+      blockedRequests: blockedCount,
+      piiDetected: piiCount,
+      secretsBlocked: secretCount,
+      moneySaved: Math.round(blockedCount * 450 + piiCount * 120),
+      averageRisk: avgRisk,
+      averageCost: 0.0018,
+      totalCost,
     };
   }
 
