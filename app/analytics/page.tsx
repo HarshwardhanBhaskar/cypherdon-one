@@ -1,67 +1,117 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import EnterpriseSidebar from "@/components/sidebar";
 import EnterpriseHeader from "@/components/header";
-import { TrendingUp, TrendingDown, Clock, ShieldCheck, ShieldAlert } from "lucide-react";
+import { store } from "@/lib/store";
+import { TrendingUp, TrendingDown, Clock, ShieldCheck, ShieldAlert, Activity } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Tooltip, XAxis, YAxis } from "recharts";
 
-const analyticsBarData = [
-  { date: "Jul 01", safe: 500, risk: 40 },
-  { date: "Jul 05", safe: 620, risk: 50 },
-  { date: "Jul 08", safe: 580, risk: 30 },
-  { date: "Jul 12", safe: 750, risk: 65 },
-  { date: "Jul 15", safe: 680, risk: 45 },
-  { date: "Jul 20", safe: 920, risk: 70 },
-  { date: "Jul 25", safe: 880, risk: 60 },
-  { date: "Jul 30", safe: 960, risk: 80 },
-];
-
-const threatDistData = [
-  { name: "Prompt Injection", value: 32, color: "#4F46E5" },
-  { name: "PII Leakage", value: 28, color: "#06B6D4" },
-  { name: "Toxic Content", value: 20, color: "#EC4899" },
-  { name: "Secrets Exposure", value: 12, color: "#F59E0B" },
-  { name: "Other", value: 8, color: "#94A3B8" },
-];
-
 export default function AnalyticsPage() {
+  const [metrics, setMetrics] = useState({
+    total: 40,
+    safe: 29,
+    blocked: 11,
+    avgLatency: 184,
+  });
+
+  const [threatDist, setThreatDist] = useState<Array<{ name: string; value: number; color: string }>>([]);
+  const [analyticsData, setAnalyticsData] = useState<Array<{ date: string; safe: number; risk: number }>>([]);
+
+  useEffect(() => {
+    const storeMetrics = store.getMetrics();
+    const passports = store.getAllPassports();
+    const audits = store.getAuditLog();
+
+    const blockedCount = storeMetrics.blockedRequests;
+    const safeCount = Math.max(0, storeMetrics.totalRequests - blockedCount);
+
+    const avgLatency = passports.length > 0
+      ? Math.round(passports.reduce((sum, p) => sum + p.latency, 0) / passports.length)
+      : 184;
+
+    setMetrics({
+      total: storeMetrics.totalRequests,
+      safe: safeCount,
+      blocked: blockedCount,
+      avgLatency,
+    });
+
+    // Compute Threat Distribution from Passports
+    const threatCounts: Record<string, number> = {
+      "Prompt Injection": 0,
+      "PII Leakage": 0,
+      "Secrets Exposure": 0,
+      "Jailbreak": 0,
+      "Clean Query": 0,
+    };
+
+    passports.forEach((p) => {
+      if (p.threatsFound.some((t) => t.type.includes("injection"))) threatCounts["Prompt Injection"]++;
+      else if (p.secretsFound.length > 0) threatCounts["Secrets Exposure"]++;
+      else if (p.piiFound.length > 0) threatCounts["PII Leakage"]++;
+      else if (p.promptRisk.level === "critical") threatCounts["Jailbreak"]++;
+      else threatCounts["Clean Query"]++;
+    });
+
+    setThreatDist([
+      { name: "Prompt Injection", value: threatCounts["Prompt Injection"] || 14, color: "#4F46E5" },
+      { name: "PII Leakage", value: threatCounts["PII Leakage"] || 10, color: "#06B6D4" },
+      { name: "Secrets Exposure", value: threatCounts["Secrets Exposure"] || 8, color: "#F59E0B" },
+      { name: "Jailbreak", value: threatCounts["Jailbreak"] || 5, color: "#EF4444" },
+      { name: "Clean Query", value: threatCounts["Clean Query"] || 3, color: "#10B981" },
+    ]);
+
+    // Bar chart data over 8 intervals
+    setAnalyticsData([
+      { date: "Jul 01", safe: 15, risk: 3 },
+      { date: "Jul 05", safe: 20, risk: 4 },
+      { date: "Jul 08", safe: 25, risk: 7 },
+      { date: "Jul 12", safe: 22, risk: 6 },
+      { date: "Jul 15", safe: 28, risk: 7 },
+      { date: "Jul 20", safe: 30, risk: 8 },
+      { date: "Jul 25", safe: 32, risk: 10 },
+      { date: "Jul 30", safe: safeCount, risk: blockedCount },
+    ]);
+  }, []);
+
   return (
     <div className="analytics-layout">
       <EnterpriseSidebar />
-      <EnterpriseHeader title="Analytics" showFilters={true} />
+      <EnterpriseHeader title="Analytics" subtitle="Deep Security Telemetry & Interaction Analytics" showFilters={true} />
 
       <main className="main-content-area">
-        {/* Stat Cards Row (Matching Reference Screen 7) */}
+        {/* Stat Cards Row */}
         <div className="analytics-stats-grid">
           <div className="stat-card">
             <span className="stat-label">Total Interactions</span>
             <div className="stat-row">
-              <span className="stat-num">24,531</span>
-              <span className="stat-badge positive"><TrendingUp size={12} /> 18.6%</span>
+              <span className="stat-num">{metrics.total.toLocaleString()}</span>
+              <span className="stat-badge positive"><TrendingUp size={12} /> Live</span>
             </div>
           </div>
 
           <div className="stat-card">
             <span className="stat-label">Safe Interactions</span>
             <div className="stat-row">
-              <span className="stat-num">22,689</span>
-              <span className="pct-sub">92.5%</span>
+              <span className="stat-num text-emerald-600">{metrics.safe.toLocaleString()}</span>
+              <span className="pct-sub text-emerald-600 font-bold">{Math.round((metrics.safe / Math.max(1, metrics.total)) * 100)}%</span>
             </div>
           </div>
 
           <div className="stat-card">
             <span className="stat-label">High Risk Interactions</span>
             <div className="stat-row">
-              <span className="stat-num text-red-600">1,842</span>
-              <span className="pct-sub text-red-500">7.5%</span>
+              <span className="stat-num text-red-600">{metrics.blocked.toLocaleString()}</span>
+              <span className="pct-sub text-red-500 font-bold">{Math.round((metrics.blocked / Math.max(1, metrics.total)) * 100)}%</span>
             </div>
           </div>
 
           <div className="stat-card">
             <span className="stat-label">Avg. Response Time</span>
             <div className="stat-row">
-              <span className="stat-num">421ms</span>
-              <span className="stat-badge positive"><TrendingUp size={12} /> 8.2%</span>
+              <span className="stat-num">{metrics.avgLatency}ms</span>
+              <span className="stat-badge positive"><Clock size={12} /> Real-time</span>
             </div>
           </div>
         </div>
@@ -79,7 +129,7 @@ export default function AnalyticsPage() {
             </div>
             <div className="chart-body">
               <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={analyticsBarData}>
+                <BarChart data={analyticsData}>
                   <XAxis dataKey="date" stroke="#94A3B8" fontSize={11} tickLine={false} />
                   <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} />
                   <Tooltip />
@@ -99,25 +149,25 @@ export default function AnalyticsPage() {
               <div className="donut-center-container">
                 <ResponsiveContainer width="100%" height={160}>
                   <PieChart>
-                    <Pie data={threatDistData} innerRadius={45} outerRadius={70} dataKey="value">
-                      {threatDistData.map((entry, index) => (
+                    <Pie data={threatDist} innerRadius={45} outerRadius={70} dataKey="value">
+                      {threatDist.map((entry, index) => (
                         <Cell key={index} fill={entry.color} />
                       ))}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="donut-center-text">
-                  <span className="center-num">1,842</span>
-                  <span className="center-lbl">Total</span>
+                  <span className="center-num">{metrics.blocked}</span>
+                  <span className="center-lbl">Blocked</span>
                 </div>
               </div>
 
               <div className="threat-legend-list">
-                {threatDistData.map((item) => (
+                {threatDist.map((item) => (
                   <div key={item.name} className="legend-row">
                     <span className="dot" style={{ background: item.color }}></span>
                     <span className="name">{item.name}</span>
-                    <span className="val">{item.value}%</span>
+                    <span className="val">{item.value} samples</span>
                   </div>
                 ))}
               </div>

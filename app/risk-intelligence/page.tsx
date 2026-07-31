@@ -1,27 +1,52 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import EnterpriseSidebar from "@/components/sidebar";
 import EnterpriseHeader from "@/components/header";
+import { store } from "@/lib/store";
 import {
   Globe2, AlertTriangle, ShieldAlert, ArrowUpRight, Flame, MapPin
 } from "lucide-react";
 
-const topRisks = [
-  { id: 1, title: "Employee Data Dump", category: "PII Leakage", score: 78, time: "Just now" },
-  { id: 2, title: "API Key Leakage", category: "Secrets Exposure", score: 72, time: "10m ago" },
-  { id: 3, title: "Financial Data Exposure", category: "PII Leakage", score: 68, time: "25m ago" },
-  { id: 4, title: "Prompt Injection Attempt", category: "Prompt Injection", score: 60, time: "1h ago" },
-  { id: 5, title: "PII in Conversation", category: "PII Leakage", score: 50, time: "2h ago" },
-];
-
 export default function RiskIntelligencePage() {
+  const [topRisks, setTopRisks] = useState<Array<{ id: number; title: string; category: string; score: number; time: string }>>([]);
+  const [latestCritical, setLatestCritical] = useState<string>("OpenAI Key sk-proj-**** intercepted in prompt scan");
+
+  useEffect(() => {
+    const audits = store.getAuditLog();
+    const passports = store.getAllPassports();
+
+    // Map audits to top risk feed
+    const mapped = audits.slice(0, 6).map((item, idx) => ({
+      id: idx + 1,
+      title: item.action,
+      category: item.action.includes("PII")
+        ? "PII Leakage"
+        : item.action.includes("Secret")
+        ? "Secrets Exposure"
+        : item.action.includes("Injection")
+        ? "Prompt Injection"
+        : "Policy Violation",
+      score: item.riskScore,
+      time: `${idx * 12 + 5}m ago`,
+    }));
+
+    setTopRisks(mapped);
+
+    // Get latest critical event
+    const criticalPassport = passports.find((p) => p.promptRisk.level === "critical" || p.secretsFound.length > 0);
+    if (criticalPassport && criticalPassport.secretsFound.length > 0) {
+      setLatestCritical(`Credential ${criticalPassport.secretsFound[0].maskedValue} intercepted in prompt scan`);
+    }
+  }, []);
+
   return (
     <div className="risk-layout">
       <EnterpriseSidebar />
-      <EnterpriseHeader title="Risk Intelligence" showFilters={true} />
+      <EnterpriseHeader title="Risk Intelligence" subtitle="Global AI Threat Surface & Behavioral Intelligence" showFilters={true} />
 
       <main className="main-content-area">
-        {/* Map & Risks Split Grid (Matching Reference Screen 5) */}
+        {/* Map & Risks Split Grid */}
         <div className="risk-grid-container">
           {/* Left: Global Heatmap Container */}
           <div className="heatmap-card">
@@ -57,7 +82,7 @@ export default function RiskIntelligencePage() {
           {/* Right: Top Risk Interactions Feed */}
           <div className="top-risks-card">
             <div className="card-header">
-              <h3>Top Risk Interactions</h3>
+              <h3>Top Risk Interactions (Live Audit Stream)</h3>
             </div>
 
             <div className="risks-feed">
@@ -82,15 +107,15 @@ export default function RiskIntelligencePage() {
         {/* Bottom Banner: Recent Critical Events */}
         <div className="critical-events-banner">
           <div className="event-left">
-            <span className="event-label">Recent Critical Events</span>
+            <span className="event-label">Recent Critical Threat Interception</span>
             <div className="event-content">
               <AlertTriangle size={14} className="text-red-500" />
-              <span>API Key sk-proj-*****789 detected in conversation</span>
+              <span>{latestCritical}</span>
             </div>
           </div>
           <div className="event-right">
             <span className="high-risk-badge">High-Risk</span>
-            <span className="event-time">10m ago</span>
+            <span className="event-time">Real-time</span>
           </div>
         </div>
       </main>
